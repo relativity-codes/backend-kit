@@ -44,12 +44,7 @@ export class PaystackNotificationService {
               const incomingStatus = (newNotification.status ?? '').toString().toLowerCase();
               const mappedStatus = incomingStatus === 'success' || incomingStatus === 'successful' ? 'SUCCESS' : incomingStatus === 'failed' ? 'FAILED' : incomingStatus.toUpperCase() || 'PENDING';
 
-              const updatedTxn = await this.walletService.updateTransaction(txn.id, {
-                status: mappedStatus,
-                amount: Number(newNotification.amount ?? txn.amount),
-                referenceId: String(reference),
-                description: `Paystack ${event}`,
-              });
+              const updatedTxn = await this.walletService.updateTransactionStatus(txn.id, mappedStatus);
 
               // Try to notify the wallet owner via email
               try {

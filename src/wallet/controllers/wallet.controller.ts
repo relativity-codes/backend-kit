@@ -51,7 +51,7 @@ export class WalletController {
   @ApiResponse({ status: HttpStatus.INTERNAL_SERVER_ERROR, description: 'Internal server error', type: ResponseDto })
   async createTransaction(@UserId() userId: string, @Body(new ValidationPipe()) dto: CreateTransactionDto) {
     try {
-      const txn = await this.walletService.createTransaction(userId, dto);
+      const txn = await this.walletService.createTransactionPending(userId, dto);
       return {
         status: HttpStatus.OK,
         message: 'Transaction processed',

@@ -10,6 +10,8 @@ import {
   Table,
 } from 'sequelize-typescript';
 import { v4 as uuidv4 } from 'uuid';
+import { TransactionTypeEnum } from '../../shared-types/TransactionTypeEnum';
+import { TransactionStatusEnum } from '../../shared-types/TransactionStatusEnum';
 
 @Table({
   tableName: 'wallet_transactions',
@@ -31,13 +33,14 @@ export class WalletTransaction extends Model {
   @Column({ type: DataType.DECIMAL(19, 4), allowNull: false })
   amount: string;
 
-  @ApiProperty()
-  @Column({ type: DataType.STRING(20), allowNull: false })
-  type: string;
+  @ApiProperty({ enum: TransactionTypeEnum })
+  @Column(DataType.ENUM(TransactionTypeEnum.DEBIT, TransactionTypeEnum.CREDIT, TransactionTypeEnum.TRANSFER, TransactionTypeEnum.REFUND))
+  type: TransactionTypeEnum;
 
-  @ApiProperty()
-  @Column({ type: DataType.STRING(20), allowNull: false })
-  status: string;
+  @ApiProperty({ enum: TransactionStatusEnum })
+  @Default(TransactionStatusEnum.PENDING)
+  @Column(DataType.ENUM(TransactionStatusEnum.PENDING, TransactionStatusEnum.SUCCESS, TransactionStatusEnum.FAILED))
+  status: TransactionStatusEnum;
 
   @ApiProperty()
   @Column({ type: DataType.STRING(100), allowNull: true })

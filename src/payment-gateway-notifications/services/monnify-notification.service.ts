@@ -46,12 +46,7 @@ export class MonnifyNotificationService {
             const incomingStatus = (eventData.paymentStatus ?? '').toString().toLowerCase();
             const mappedStatus = incomingStatus === 'paid' || incomingStatus === 'success' ? 'SUCCESS' : incomingStatus === 'failed' ? 'FAILED' : incomingStatus.toUpperCase() || 'PENDING';
 
-            const updatedTxn = await this.walletService.updateTransaction(txn.id, {
-              status: mappedStatus,
-              amount: Number(payload.amountPaid ?? txn.amount),
-              referenceId: String(reference),
-              description: `Monnify ${eventType}`,
-            });
+            const updatedTxn = await this.walletService.updateTransactionStatus(txn.id, mappedStatus);
 
             // notify owner (best-effort)
             try {
