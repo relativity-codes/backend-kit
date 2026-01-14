@@ -1,0 +1,1 @@
+## the code in this folder is just for sequelize migration
