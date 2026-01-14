@@ -1,0 +1,90 @@
+apiVersion: v1
+kind: Namespace
+metadata:
+  name: coturn
+---
+apiVersion: v1
+kind: Secret
+metadata:
+  name: coturn-secret
+  namespace: coturn
+type: Opaque
+stringData:
+  VIDEOCHAT_TURN_SECRET: "REPLACE_WITH_SECRET"
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: coturn
+  namespace: coturn
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: coturn
+  template:
+    metadata:
+      labels:
+        app: coturn
+    spec:
+      containers:
+        - name: coturn
+          image: instrumentisto/coturn:4.6.0
+          env:
+            - name: VIDEOCHAT_TURN_SECRET
+              valueFrom:
+                secretKeyRef:
+                  name: coturn-secret
+                  key: VIDEOCHAT_TURN_SECRET
+            - name: VIDEOCHAT_TURN_REALM
+              value: "example.com"
+          args:
+            - "--lt-cred-mech"
+            - "--use-auth-secret"
+            - "--static-auth-secret=$(VIDEOCHAT_TURN_SECRET)"
+            - "--realm=$(VIDEOCHAT_TURN_REALM)"
+            - "--listening-port=3478"
+            - "--fingerprint"
+            - "--no-stdout-log"
+          ports:
+            - containerPort: 3478
+              protocol: TCP
+            - containerPort: 3478
+              protocol: UDP
+            - containerPort: 49152
+              protocol: UDP
+            - containerPort: 65535
+              protocol: UDP
+          resources:
+            requests:
+              cpu: "250m"
+              memory: "256Mi"
+            limits:
+              cpu: "1000m"
+              memory: "1Gi"
+          readinessProbe:
+            exec:
+              command: ["/bin/sh", "-c", "turnadmin -l 2>&1 | grep -q -i 'usage' || exit 0"]
+            initialDelaySeconds: 10
+            periodSeconds: 30
+            timeoutSeconds: 5
+      restartPolicy: Always
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: coturn
+  namespace: coturn
+spec:
+  type: LoadBalancer
+  selector:
+    app: coturn
+  ports:
+    - name: turn-tcp
+      port: 3478
+      protocol: TCP
+      targetPort: 3478
+    - name: turn-udp
+      port: 3478
+      protocol: UDP
+      targetPort: 3478

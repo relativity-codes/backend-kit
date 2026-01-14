@@ -11,7 +11,7 @@ import { join } from 'path';
 import * as bodyParser from 'body-parser';
 import { UserIdInterceptor } from './auth/GuardsDecorMiddleware/userId-interceptor.middleware';
 import { JwtService } from '@nestjs/jwt';
-// import { UserIdMiddleware } from './auth/GuardsDecorMiddleware/user-id.middleware';
+import { UserIdMiddleware } from './auth/GuardsDecorMiddleware/user-id.middleware';
 dotenv.config();
 
 async function bootstrap() {
@@ -19,14 +19,14 @@ async function bootstrap() {
     logger: ['error', 'warn', 'log', 'fatal', 'debug', 'verbose'],
   });
 
-  // const secretKey = process.env.JWT_SECRET_KEY || 'default-secret-key';
-  // const jwtService = new JwtService({ secret: secretKey });
-  // const userIdMiddleware = new UserIdMiddleware(jwtService);
-  // app.use(userIdMiddleware.use.bind(userIdMiddleware));
-  // app.useGlobalInterceptors(new UserIdInterceptor(jwtService));
   const secretKey = process.env.JWT_SECRET_KEY || 'default-secret-key';
   const jwtService = new JwtService({ secret: secretKey });
+  const userIdMiddleware = new UserIdMiddleware(jwtService);
+  app.use(userIdMiddleware.use.bind(userIdMiddleware));
   app.useGlobalInterceptors(new UserIdInterceptor(jwtService));
+  // const secretKey = process.env.JWT_SECRET_KEY || 'default-secret-key';
+  // const jwtService = new JwtService({ secret: secretKey });
+  // app.useGlobalInterceptors(new UserIdInterceptor(jwtService));
 
   // Enable CORS
   app.enableCors({

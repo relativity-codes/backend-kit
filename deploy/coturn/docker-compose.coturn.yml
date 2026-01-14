@@ -1,0 +1,35 @@
+version: '3.8'
+services:
+  coturn:
+    image: instrumentisto/coturn:4.6.0
+    container_name: coturn
+    restart: unless-stopped
+    env_file:
+      - ./.env
+    ports:
+      - "3478:3478" # TCP for TURN
+      - "3478:3478/udp" # UDP for TURN
+      - "49152-65535:49152-65535/udp" # high ports for relayed RTP
+    command: [
+      "--lt-cred-mech",
+      "--use-auth-secret",
+      "--static-auth-secret=${VIDEOCHAT_TURN_SECRET}",
+      "--realm=${VIDEOCHAT_TURN_REALM:-example.com}",
+      "--listening-port=3478",
+      "--external-ip=${COTURN_EXTERNAL_IP:-}",
+      "--fingerprint",
+      "--no-stdout-log"
+    ]
+    volumes:
+      - ./coturn-data:/var/lib/coturn
+    healthcheck:
+      test: ["CMD-SHELL", "turnadmin -l 2>&1 | grep -q -i 'usage' || exit 0"]
+      interval: 30s
+      timeout: 5s
+      retries: 3
+    networks:
+      - coturn-net
+
+networks:
+  coturn-net:
+    driver: bridge

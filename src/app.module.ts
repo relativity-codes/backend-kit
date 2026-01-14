@@ -17,6 +17,9 @@ import { JwtModule } from '@nestjs/jwt';
 import { PaystackNotifications } from './payment-gateway-notifications/models/paystack-notification.model';
 import { PaystackTransferRecipients } from './payment-gateway-notifications/models/paystack-transfer-recipients';
 import { MonnifyNotifications } from './payment-gateway-notifications/models/monnify-notification.model';
+import { Room } from './video-chat/models/room.model';
+import { RoomParticipant } from './video-chat/models/room-participant.model';
+import { VideoChatModule } from './video-chat/video-chat.module';
 import { PaymentGatewayNotificationsModule } from './payment-gateway-notifications/payment-gateway-notifications.module';
 import { WalletModule } from './wallet/wallet.module';
 
@@ -39,6 +42,8 @@ console.log('R E L A T I V I T Y - C O D E S');
         PaystackNotifications,
         PaystackTransferRecipients,
         MonnifyNotifications,
+        Room,
+        RoomParticipant,
       ],
       pool: {
         max: 10,
@@ -54,6 +59,7 @@ console.log('R E L A T I V I T Y - C O D E S');
     MailModule,
     PaymentGatewayNotificationsModule,
     WalletModule,
+    VideoChatModule,
   ],
 
   controllers: [AppController],

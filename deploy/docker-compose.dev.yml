@@ -1,0 +1,59 @@
+version: '3.8'
+services:
+  redis:
+    image: redis:7
+    restart: unless-stopped
+    ports:
+      - "6379:6379"
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+  coturn:
+    image: instrumentisto/coturn:4.6.0
+    restart: unless-stopped
+    env_file:
+      - ./.env
+    ports:
+      - "3478:3478"
+      - "3478:3478/udp"
+      - "49152-65535:49152-65535/udp"
+    command: [
+      "--lt-cred-mech",
+      "--use-auth-secret",
+      "--static-auth-secret=${VIDEOCHAT_TURN_SECRET}",
+      "--realm=${VIDEOCHAT_TURN_REALM:-example.com}",
+      "--listening-port=3478",
+      "--fingerprint",
+      "--no-stdout-log"
+    ]
+    healthcheck:
+      test: ["CMD-SHELL", "turnadmin -l 2>&1 | grep -q -i 'usage' || exit 0"]
+      interval: 30s
+      timeout: 5s
+      retries: 3
+
+  backend:
+    build: ..
+    image: backend-kit:dev
+    restart: unless-stopped
+    env_file:
+      - ../.env
+    depends_on:
+      redis:
+        condition: service_started
+      coturn:
+        condition: service_started
+    ports:
+      - "3005:3005"
+    # For local dev you can mount the source to enable hot reload; uncomment if needed
+    volumes:
+      - ..:/usr/src/app
+    command: ["npm", "run", "start:dev"]
+    # command: ["npm", "run", "start:prod"]
+
+networks:
+  default:
+    driver: bridge
