@@ -14,8 +14,6 @@ import { JwtService } from '@nestjs/jwt';
 import { SocketJwtGuard } from './guards/socket-jwt.guard';
 import { UsePipes, ValidationPipe } from '@nestjs/common';
 import { WsException } from '@nestjs/websockets';
-import { createAdapter } from '@socket.io/redis-adapter';
-import { createClient } from 'redis';
 import { OnGatewayInit } from '@nestjs/websockets';
 
 @WebSocketGateway({ namespace: '/video', cors: true })
@@ -32,24 +30,21 @@ export class VideoChatGateway implements OnGatewayInit, OnGatewayConnection, OnG
 
     // Called once after the gateway is initialized
     async afterInit(server: Server) {
-        if (process.env.VIDEOCHAT_USE_REDIS === 'true' && process.env.REDIS_URL) {
-            try {
-                const pubClient = createClient({ url: process.env.REDIS_URL });
-                const subClient = pubClient.duplicate();
-                await pubClient.connect();
-                await subClient.connect();
-                server.adapter(createAdapter(pubClient, subClient));
-                console.log('Socket.IO Redis adapter enabled');
-            } catch (err) {
-                console.warn('Failed to enable Socket.IO Redis adapter', err);
-            }
-        }
+        console.log('VideoChatGateway initialized');
+        console.log(`WebSocket server initialized at ${new Date().toISOString()}`);
+        console.log('VIDEOCHAT_USE_REDIS:', process.env.VIDEOCHAT_USE_REDIS);
+        server.use((socket, next) => {
+            console.log('Incoming connection:', socket.id);
+            next(); // must call next() to continue handshake
+        });
     }
 
     handleConnection(client: Socket) {
         // validate handshake token (redundant with guard but ensures handleConnection has user data)
         try {
             const token = (client.handshake?.auth && client.handshake.auth.token) || client.handshake?.query?.token;
+            console.log('Client attempting connection:', client.id);
+            console.log('Token provided:', token);
             if (!token) {
                 client.disconnect(true);
                 return;

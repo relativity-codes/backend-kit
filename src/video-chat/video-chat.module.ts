@@ -38,4 +38,5 @@ import * as redisStore from 'cache-manager-redis-store';
     controllers: [VideoChatController, VideoChatHealthController],
     exports: [VideoChatService, VideoChatGateway],
 })
+
 export class VideoChatModule { }

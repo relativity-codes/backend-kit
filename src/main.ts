@@ -12,6 +12,7 @@ import * as bodyParser from 'body-parser';
 import { UserIdInterceptor } from './auth/GuardsDecorMiddleware/userId-interceptor.middleware';
 import { JwtService } from '@nestjs/jwt';
 import { UserIdMiddleware } from './auth/GuardsDecorMiddleware/user-id.middleware';
+import { RedisIoAdapter } from './redis.adapter';
 dotenv.config();
 
 async function bootstrap() {
@@ -24,9 +25,6 @@ async function bootstrap() {
   const userIdMiddleware = new UserIdMiddleware(jwtService);
   app.use(userIdMiddleware.use.bind(userIdMiddleware));
   app.useGlobalInterceptors(new UserIdInterceptor(jwtService));
-  // const secretKey = process.env.JWT_SECRET_KEY || 'default-secret-key';
-  // const jwtService = new JwtService({ secret: secretKey });
-  // app.useGlobalInterceptors(new UserIdInterceptor(jwtService));
 
   // Enable CORS
   app.enableCors({
@@ -61,6 +59,14 @@ async function bootstrap() {
 
   // Setup Swagger
   setupSwagger(app);
+
+  if (process.env.VIDEOCHAT_USE_REDIS === 'true') {
+    const redisAdapter = new RedisIoAdapter(app);
+    await redisAdapter.connectToRedis();
+    app.useWebSocketAdapter(redisAdapter);
+    console.log('Using Redis for WebSocket adapter');
+  }
+
   // Synchronize Sequelize models
   const sequelize = app.get(Sequelize);
   try {

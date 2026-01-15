@@ -1,4 +1,4 @@
-import { Injectable, NotFoundException, Inject, forwardRef} from '@nestjs/common';
+import { Injectable, NotFoundException, Inject, forwardRef } from '@nestjs/common';
 import { InjectModel } from '@nestjs/sequelize';
 import { Room } from '../models/room.model';
 import { RoomParticipant } from '../models/room-participant.model';
@@ -6,7 +6,7 @@ import { Sequelize } from 'sequelize-typescript';
 import { VideoChatGateway } from 'src/video-chat/video-chat.gateway';
 import { CACHE_MANAGER } from '@nestjs/cache-manager';
 import { Cache } from 'cache-manager';
-
+import * as jwt from 'jsonwebtoken';
 @Injectable()
 export class VideoChatService {
   constructor(
@@ -15,13 +15,20 @@ export class VideoChatService {
     private readonly sequelize: Sequelize,
     @Inject(forwardRef(() => VideoChatGateway)) private readonly gateway: VideoChatGateway,
     @Inject(CACHE_MANAGER) private cacheManager: Cache
-  ) {}
+  ) { }
+
+  private async generateJwtToken(payload: any, ttlSeconds: number): Promise<string> {
+    const secretKey = process.env.JWT_SECRET_KEY || 'default-secret-key';
+    const { exp, ...rest } = payload;
+    return jwt.sign(rest, secretKey, { expiresIn: ttlSeconds });
+  }
+
 
   // Redis-backed socket mapping
   async setUserSocket(userId: string, socketId: string) {
     const ttl = parseInt(process.env.VIDEOCHAT_SOCKET_TTL || '300', 10); // seconds
-    await this.cacheManager.set(`user:${userId}:socket`, socketId,  ttl );
-    await this.cacheManager.set(`socket:${socketId}:user`, userId,  ttl );
+    await this.cacheManager.set(`user:${userId}:socket`, socketId, ttl);
+    await this.cacheManager.set(`socket:${socketId}:user`, userId, ttl);
   }
 
   async getUserSocket(userId: string) {
@@ -68,7 +75,7 @@ export class VideoChatService {
       try {
         this.gateway?.broadcastParticipantJoined(roomId, participant);
       } catch (err) {
-  
+
         console.warn('Failed to broadcast participant joined', err);
       }
       return participant;
@@ -85,7 +92,7 @@ export class VideoChatService {
       try {
         this.gateway?.broadcastParticipantLeft(roomId, participant);
       } catch (err) {
-  
+
         console.warn('Failed to broadcast participant left', err);
       }
     }
@@ -119,15 +126,15 @@ export class VideoChatService {
           iceServers = parsed;
         }
       } catch (err) {
-  
+
         console.warn('Invalid VIDEOCHAT_ICE_SERVERS JSON, falling back to default STUN', err);
       }
     }
 
     const ttlSeconds = parseInt(process.env.VIDEOCHAT_TOKEN_TTL_SECONDS || '300', 10);
 
-    // Placeholder token (in real integration this would be an ephemeral provider token or TURN creds)
-    const token = `token-${roomId}-${userId}-${Date.now()}`;
+    const tokenPayload = { roomId, userId }; // remove manual exp
+    const token = await this.generateJwtToken(tokenPayload, ttlSeconds);
 
     // If a TURN secret is configured (coturn long-term shared secret), generate time-limited credentials
     const turnSecret = process.env.VIDEOCHAT_TURN_SECRET;
@@ -150,7 +157,7 @@ export class VideoChatService {
           };
         });
       } catch (err) {
-  
+
         console.warn('Failed to generate TURN credentials', err);
       }
     }

@@ -21,9 +21,6 @@ export class SocketJwtGuard implements CanActivate {
 
     try {
       const decoded = this.jwtService.verify(token);
-      // Attach user payload to socket for handlers to use
-      // Commonly the payload has `sub` or `userId` depending on your jwt strategy
-      // Save as `client.data.user`
       (client as any).data = (client as any).data || {};
       (client as any).data.user = decoded;
       return true;

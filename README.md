@@ -188,7 +188,8 @@ This Compose file is convenient for local development and small single-host depl
 
 ```bash
 # prints a strong secret
-./scripts/generate-turn-secret.sh
+chmod +x scripts/generate-turn-secret.sh
+sudo scripts/generate-turn-secret.sh
 ```
 
 2. Copy the secret into `.env` (DO NOT commit):
